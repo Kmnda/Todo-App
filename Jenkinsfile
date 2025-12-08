@@ -47,23 +47,29 @@ pipeline {
                 sshagent(['ec2-ssh-key']) {
                     script {
                         // 1. Copy config files to Server (SCP)
-                        // Make sure prometheus.yml exists in your git repo!
+                        // This updates the logic on the server with your latest docker-compose
                         sh "scp -o StrictHostKeyChecking=no docker-compose.yml ec2-user@${EC2_IP}:/home/ec2-user/docker-compose.yml"
                         sh "scp -o StrictHostKeyChecking=no prometheus.yml ec2-user@${EC2_IP}:/home/ec2-user/prometheus.yml"
 
-                        // 2. Run Docker Compose Remotely
+                        // 2. Run Deployment Remotely
                         sh """
                         ssh -o StrictHostKeyChecking=no ec2-user@${EC2_IP} '
-                            # Set the Image URI variable for the server session
+                            # Set the Image URI variable so docker-compose knows what to pull
                             export ECR_IMAGE_URI=${ECR_REGISTRY}/${ECR_REPO_NAME}:latest
 
                             # Login to ECR on the server
                             aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
+                            # --- CRITICAL FIX: CLEANUP ---
+                            # Stop any old "manual" containers to free up Port 5000
+                            docker stop todo-app || true
+                            docker rm todo-app || true
+
                             # Pull the latest images
                             docker-compose pull
 
                             # Start the stack (Detached)
+                            # --remove-orphans cleans up any old services that were deleted from the file
                             docker-compose up -d --remove-orphans
                         '
                         """
