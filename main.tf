@@ -62,7 +62,13 @@ resource "aws_security_group" "web_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+  # Allow Grafana Dashboard
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   # Allow SSH from anywhere (For you to manage)
   # Ideally, restrict this to your IP: ["YOUR_IP/32"]
   ingress {
@@ -78,6 +84,7 @@ resource "aws_security_group" "web_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    
   }
 }
 
