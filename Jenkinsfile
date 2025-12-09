@@ -6,9 +6,8 @@ pipeline {
         AWS_ACCOUNT_ID = '380171765307' 
         AWS_REGION     = 'ap-southeast-1'
         ECR_REPO_NAME  = 'todo-app'
-        EC2_IP         = '54.179.160.195'
+        EC2_IP         = '54.179.160.195'  // Ensure this matches your current Terraform Output
         IMAGE_TAG      = "${BUILD_NUMBER}"
-        // Full Registry URL
         ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
     }
 
@@ -27,14 +26,9 @@ pipeline {
             steps {
                 script {
                     withAWS(credentials: 'aws-creds', region: AWS_REGION) {
-                        // Build
                         sh "docker build -t ${ECR_REPO_NAME} ."
-                        
-                        // Tag
                         sh "docker tag ${ECR_REPO_NAME}:latest ${ECR_REGISTRY}/${ECR_REPO_NAME}:${IMAGE_TAG}"
                         sh "docker tag ${ECR_REPO_NAME}:latest ${ECR_REGISTRY}/${ECR_REPO_NAME}:latest"
-
-                        // Push both tags
                         sh "docker push ${ECR_REGISTRY}/${ECR_REPO_NAME}:${IMAGE_TAG}"
                         sh "docker push ${ECR_REGISTRY}/${ECR_REPO_NAME}:latest"
                     }
@@ -45,34 +39,37 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sshagent(['ec2-ssh-key']) {
-                    script {
-                        // 1. Copy config files to Server (SCP)
-                        // This updates the logic on the server with your latest docker-compose
-                        sh "scp -o StrictHostKeyChecking=no docker-compose.yml ec2-user@${EC2_IP}:/home/ec2-user/docker-compose.yml"
-                        sh "scp -o StrictHostKeyChecking=no prometheus.yml ec2-user@${EC2_IP}:/home/ec2-user/prometheus.yml"
+                    // --- FIX: Get AWS Keys from Jenkins Credentials ---
+                    withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        script {
+                            // 1. Copy config files
+                            sh "scp -o StrictHostKeyChecking=no docker-compose.yml ec2-user@${EC2_IP}:/home/ec2-user/docker-compose.yml"
+                            sh "scp -o StrictHostKeyChecking=no prometheus.yml ec2-user@${EC2_IP}:/home/ec2-user/prometheus.yml"
 
-                        // 2. Run Deployment Remotely
-                        sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_IP} '
-                            # Set the Image URI variable so docker-compose knows what to pull
-                            export ECR_IMAGE_URI=${ECR_REGISTRY}/${ECR_REPO_NAME}:latest
+                            // 2. Remote Deployment
+                            sh """
+                            ssh -o StrictHostKeyChecking=no ec2-user@${EC2_IP} '
+                                # --- INJECT CREDENTIALS (Fixes "Unable to locate credentials") ---
+                                export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                                export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                                export AWS_DEFAULT_REGION=${AWS_REGION}
+                                
+                                # Set Image URI
+                                export ECR_IMAGE_URI=${ECR_REGISTRY}/${ECR_REPO_NAME}:latest
 
-                            # Login to ECR on the server
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                                # Login to ECR (Now this will work!)
+                                aws ecr get-login-password | docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
-                            # --- CRITICAL FIX: CLEANUP ---
-                            # Stop any old "manual" containers to free up Port 5000
-                            docker stop todo-app || true
-                            docker rm todo-app || true
+                                # Cleanup
+                                docker stop todo-app || true
+                                docker rm todo-app || true
 
-                            # Pull the latest images
-                            docker-compose pull
-
-                            # Start the stack (Detached)
-                            # --remove-orphans cleans up any old services that were deleted from the file
-                            docker-compose up -d --remove-orphans
-                        '
-                        """
+                                # Pull & Start
+                                docker-compose pull
+                                docker-compose up -d --remove-orphans
+                            '
+                            """
+                        }
                     }
                 }
             }
