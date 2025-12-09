@@ -1,7 +1,9 @@
 services:
   app:
-    # CHANGED: Use the variable we will set in Jenkins
-    image: ${ECR_IMAGE_URI}
+    # 1. ALLOW LOCAL BUILDS
+    build: .
+    # 2. DUAL STRATEGY: Use ECR variable if present, else default to 'todo-app:local'
+    image: ${ECR_IMAGE_URI:-todo-app:local} 
     ports:
       - "5000:5000"
     environment:
