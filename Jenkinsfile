@@ -6,7 +6,7 @@ pipeline {
         AWS_ACCOUNT_ID = '380171765307' 
         AWS_REGION     = 'ap-southeast-1'
         ECR_REPO_NAME  = 'todo-app'
-        EC2_IP         = '13.212.245.102' 
+        EC2_IP         = '13.212.81.142' 
         IMAGE_TAG      = "${BUILD_NUMBER}"
         ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
     }
