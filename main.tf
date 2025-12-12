@@ -124,7 +124,7 @@ resource "aws_key_pair" "deployer" {
 resource "aws_instance" "app_server" {
   # Use the dynamic AMI ID we fetched earlier
   ami           = data.aws_ami.amazon_linux_2023.id
-  instance_type = "t2.micro"
+  instance_type = "t3.small"
 
   subnet_id              = aws_subnet.public.id
   key_name               = aws_key_pair.deployer.key_name
