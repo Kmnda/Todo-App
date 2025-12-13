@@ -4,6 +4,7 @@ services:
     build: .
     # 2. DUAL STRATEGY: Use ECR variable if present, else default to 'todo-app:local'
     image: ${ECR_IMAGE_URI:-todo-app:local} 
+    container_name: todo-app
     ports:
       - "5000:5000"
     environment:
@@ -35,6 +36,8 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
 
   grafana:
     image: grafana/grafana:latest
