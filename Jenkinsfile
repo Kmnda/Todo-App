@@ -39,15 +39,10 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sshagent(['ec2-ssh-key']) {
-                    // --- FIX: Use withAWS to unwrap the 'AWS Credentials' object ---
                     withAWS(credentials: 'aws-creds', region: AWS_REGION) {
-                        script {
-                            // 1. Copy config files
+                        script {                            s
                             sh "scp -o StrictHostKeyChecking=no docker-compose.yml ec2-user@${EC2_IP}:/home/ec2-user/docker-compose.yml"
-                            sh "scp -o StrictHostKeyChecking=no prometheus.yml ec2-user@${EC2_IP}:/home/ec2-user/prometheus.yml"
-
-                            // 2. Remote Deployment
-                            // We inject the env vars provided by withAWS into the SSH session
+                            sh "scp -o StrictHostKeyChecking=no prometheus.yml ec2-user@${EC2_IP}:/home/ec2-user/prometheus.yml"                            
                             sh """
                             ssh -o StrictHostKeyChecking=no ec2-user@${EC2_IP} '
                                 # Inject keys from Jenkins environment to Remote Server environment

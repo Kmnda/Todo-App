@@ -3,9 +3,7 @@ import random
 import requests
 import sys
 
-# REPLACE THIS WITH YOUR TERRAFORM OUTPUT IP
-SERVER_IP = "47.128.226.87" 
-BASE_URL = f"http://{SERVER_IP}"
+BASE_URL = "http://localhost:5001"
 
 def generate_traffic():
     print(f"🚀 Starting traffic generator for {BASE_URL}...")
