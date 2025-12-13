@@ -471,4 +471,4 @@ Here is a quick reference for the commands frequently used in this project.
 **A:** Good! That means your app is working. To test the panel, you must generate errors. Use the `/simulate-error` endpoint or the traffic generator's error mode.
 
 ---
-*Created by the DevOps Team. Saturday, 13 December 2025.*
+*Created by me . Saturday, 13 December 2025.*
