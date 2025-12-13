@@ -4,7 +4,7 @@ import requests
 import sys
 
 # REPLACE THIS WITH YOUR TERRAFORM OUTPUT IP
-SERVER_IP = "13.212.81.142" 
+SERVER_IP = "47.128.226.87" 
 BASE_URL = f"http://{SERVER_IP}"
 
 def generate_traffic():
